@@ -1,4 +1,4 @@
-# Author: Eric Benner <ebenner@vultr.com>
+# Authors: Tyler Weldon <tylerweldon94@gmail.com>, Eric Benner <ebenner@vultr.com>
 #
 # This file is part of cloud-init. See LICENSE file for license information.
 
@@ -168,75 +168,6 @@ def get_interface_name(mac):
     return MAC_TO_NICS.get(mac)
 
 
-# Run system commands and handle errors
-def run_system_command(command, allow_fail=True):
-    try:
-        subp.subp(command)
-    except Exception as err:
-        if not allow_fail:
-            raise RuntimeError("Command: %s failed to execute. Error: %s" % (" ".join(command), err))
-        LOGGER.debug("Command: %s failed to execute. Error: %s" % (" ".join(command), err))
-        return False
-    return True
-
-
-# Cloud-init does not support turning on any interface beyond
-# the first. The repercussions being there is no stable and
-# appropriate way to enable critical interfaces. This hack,
-# though functional, will have minimal support and break easily.
-def bringup_nic(nic, toggle=False):
-    # Dont act if not toggling and it interface is up
-    if not toggle and net.is_up(nic['name']):
-        return
-
-    # If it is not the primary turn it on, if it is off
-    if nic['mac_address'] != md['v1']['interfaces'][0]['mac']:
-        prefix = "/" + str(sum(bin(int(x)).count('1') for x in nic['subnets'][0]['netmask'].split('.')))
-        ip = nic['subnets'][0]['address'] + prefix
-
-        # Only use IP commands if they exist and this is Linux
-        if util.is_Linux() and subp.which('ip'):
-
-            # Toggle interface if up
-            if toggle and net.is_up(nic['name']):
-                LOGGER.debug("Brining down interface: %s" % nic['name'])
-                if not run_system_command(['ip', 'link', 'set', 'dev', nic['name'], 'down']):
-                    LOGGER.debug("Failed brining down interface: %s" % nic['name'])
-                    return
-
-            LOGGER.debug("Assigning IP: %s to interface: %s" % (ip, nic['name']))
-            if not run_system_command(['ip', 'addr', 'add', ip, 'dev', nic['name']]):
-                LOGGER.debug("Failed assigning IP: %s to interface: %s" % (ip, nic['name']))
-                return
-
-            LOGGER.debug("Brining up interface: %s" % nic['name'])
-            run_system_command(['ip', 'link', 'set', 'dev', nic['name'], 'up'])
-
-        # Only use ifconfig if this is BSD
-        if util.is_BSD() and subp.which('ifconfig'):
-            # Toggle interface if up
-            if toggle and net.is_up(nic['name']):
-                LOGGER.debug("Brining down interface: %s" % nic['name'])
-                if not run_system_command(['ifconfig', nic['name'], 'down']):
-                    LOGGER.debug("Failed brining down interface: %s" % nic['name'])
-                    return
-
-            LOGGER.debug("Assigning IP: %s to interface: %s" % (ip, nic['name']))
-            if run_system_command(['ifconfig', nic['name'], 'inet', ip]):
-                LOGGER.debug("Failed assigning IP: %s to interface: %s" % (ip, nic['name']))
-                return
-
-            LOGGER.debug("Brining up interface: %s" % nic['name'])
-            run_system_command(['ipconfig', nic['name'], 'up'])
-
-
-# Process netcfg interfaces and bring additional up
-def process_nics(netcfg, toggle=False):
-    for config_op in netcfg['config']:
-        if config_op['type'] == "physical":
-            bringup_nic(nic, toggle)
-
-
 # Generate network configs
 def generate_network_config(config):
     md = get_metadata(config)
@@ -253,21 +184,25 @@ def generate_network_config(config):
         ]
     }
 
-    # Prepare interface 0, public
-    if len(md['v1']['interfaces']) > 0:
-        interface_name = get_interface_name(md['v1']['interfaces'][0]['mac'])
-        if not interface_name:
-            raise RuntimeError("Interface: %s could not be found on the system" % md['v1']['interfaces'][0]['mac'])
+    for i in md['v1']['interfaces']:
+       interface = md['v1']['interfaces'][i]
+
+       interface_name = get_interface_name(interface['mac'])
+       if not interface_name:
+           raise RuntimeError("Interface: %s could not be found on the system" % interface['mac'])
 
         netcfg = {
             "name": interface_name,
             "type": "physical",
-            "mac_address": md['v1']['interfaces'][0]['mac'],
+            "mac_address": interface['mac'],
             "accept-ra": 1,
             "subnets": [
                 {
-                    "type": "dhcp",
-                    "control": "auto"
+                    "type": "static",
+                    "control": "auto",
+                    "address": interface['ipv4']['address'],
+                    "netmask": interface['ipv4']['netmask'],
+                    "gateway": interface['ipv4']['gateway']
                 },
                 {
                     "type": "dhcp6",
@@ -276,53 +211,6 @@ def generate_network_config(config):
             ]
         }
 
-        # Check for additional IP's
-        if "ipv4" in md['v1']['interfaces'][0] and len(md['v1']['interfaces'][0]['ipv4']['additional']) > 0:
-            for additional in md['v1']['interfaces'][0]['ipv4']['additional']:
-                add = {
-                    "type": "static",
-                    "control": "auto",
-                    "address": additional['address'],
-                    "netmask": additional['netmask']
-                }
-                netcfg['subnets'].append(add)
-
-        # Check for additional IPv6's
-        if "ipv6" in md['v1']['interfaces'][0] and len(md['v1']['interfaces'][0]['ipv6']['additional']) > 0:
-            for additional in md['v1']['interfaces'][0]['ipv6']['additional']:
-                add = {
-                    "type": "static6",
-                    "control": "auto",
-                    "address": additional['address'],
-                    "netmask": additional['netmask']
-                }
-                netcfg['subnets'].append(add)
-
-        # Add config to template
-        network['config'].append(netcfg)
-
-    # Prepare interface 1, private
-    if len(md['v1']['interfaces']) > 1:
-        interface_name = get_interface_name(md['v1']['interfaces'][1]['mac'])
-        if not interface_name:
-            raise RuntimeError("Interface: %s could not be found on the system" % md['v1']['interfaces'][1]['mac'])
-
-        netcfg = {
-            "name": interface_name,
-            "type": "physical",
-            "mac_address": md['v1']['interfaces'][1]['mac'],
-            "accept-ra": 1,
-            "subnets": [
-                {
-                    "type": "static",
-                    "control": "auto",
-                    "address": md['v1']['interfaces'][1]['ipv4']['address'],
-                    "netmask": md['v1']['interfaces'][1]['ipv4']['netmask']
-                }
-            ]
-        }
-
-        # Add config to template
         network['config'].append(netcfg)
 
     return network
@@ -366,25 +254,6 @@ def generate_config(config):
         "network": generate_network_config(config)
     }
 
-    # Linux specific packages
-    if util.is_Linux():
-        config_template["packages"].append("ethtool")
-
-    # Go through the interfaces
-    for netcfg in config_template['network']['config']:
-        # If the adapter has a name and is physical
-        if "mac_address" in netcfg and netcfg['type'] == "physical":
-            # Cloud-init does not support configuring multi-queue on
-            # interfaces. A specialized tool needs to be used to enable
-            # this critical functionality in a universal and predictable way.
-            # This hack though functional, will have minimal support and break easily.
-
-            # Enable multi-queue on linux
-            # This needs to remain a runcmd as the package may not be installed
-            if util.is_Linux():
-                # Set its multi-queue to num of cores as per RHEL Docs
-                config_template['runcmd'].append(
-                    "ethtool -L " + netcfg['name'] + " combined $(nproc --all)")
 
     # Set the startup script
     if script != "":
@@ -406,6 +275,5 @@ def generate_config(config):
         ]
 
     return config_template
-
 
 # vi: ts=4 expandtab
