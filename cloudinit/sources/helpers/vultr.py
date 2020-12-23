@@ -191,7 +191,7 @@ def generate_network_config(config):
        if not interface_name:
            raise RuntimeError("Interface: %s could not be found on the system" % interface['mac'])
 
-        netcfg = {
+       netcfg = {
             "name": interface_name,
             "type": "physical",
             "mac_address": interface['mac'],
