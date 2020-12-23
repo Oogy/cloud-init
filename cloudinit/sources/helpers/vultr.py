@@ -211,7 +211,7 @@ def generate_network_config(config):
             ]
         }
 
-        network['config'].append(netcfg)
+       network['config'].append(netcfg)
 
     return network
 
