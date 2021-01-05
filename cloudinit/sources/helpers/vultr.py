@@ -3,6 +3,7 @@
 # This file is part of cloud-init. See LICENSE file for license information.
 
 import json
+import re
 
 import os
 from os import path
@@ -13,7 +14,6 @@ from cloudinit import url_helper
 from cloudinit import dmi
 from cloudinit import util
 from cloudinit import net
-from cloudinit import subp
 
 # Get logger
 LOGGER = log.getLogger(__name__)
@@ -184,14 +184,12 @@ def generate_network_config(config):
         ]
     }
 
-    for i in md['v1']['interfaces']:
-       interface = md['v1']['interfaces'][i]
+    for interface in md['v1']['interfaces']:
+        interface_name = get_interface_name(interface['mac'])
+        if not interface_name:
+            raise RuntimeError("Interface: %s could not be found on the system" % interface['mac'])
 
-       interface_name = get_interface_name(interface['mac'])
-       if not interface_name:
-           raise RuntimeError("Interface: %s could not be found on the system" % interface['mac'])
-
-       netcfg = {
+        netcfg = {
             "name": interface_name,
             "type": "physical",
             "mac_address": interface['mac'],
@@ -211,7 +209,7 @@ def generate_network_config(config):
             ]
         }
 
-       network['config'].append(netcfg)
+        network['config'].append(netcfg)
 
     return network
 
@@ -253,7 +251,6 @@ def generate_config(config):
         },
         "network": generate_network_config(config)
     }
-
 
     # Set the startup script
     if script != "":

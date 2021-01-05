@@ -143,9 +143,6 @@ SSH_KEYS_1 = [
 EXPECTED_VULTR_CONFIG_1 = {
     'package_upgrade': 'true',
     'disable_root': 0,
-    'packages': [
-            'ethtool'
-    ],
     'ssh_pwauth': 1,
     'chpasswd': {
         'expire': False,
@@ -153,9 +150,6 @@ EXPECTED_VULTR_CONFIG_1 = {
             'root:$6$S2SmujFrCbMsobmu$5PPQqWGvBtONTg3NUW/MDhyz7l3lpYEyQ8w9gOJE.RQPlueITLXJRM4DKEbQHdc/VqxmIR9Urw0jPZ88i4yvB/'
         ]
     },
-    'runcmd': [
-        'ethtool -L eth0 combined $(nproc --all)'
-    ],
     'system_info': {
         'default_user': {
             'name': 'root'
@@ -185,9 +179,6 @@ EXPECTED_VULTR_CONFIG_1 = {
 EXPECTED_VULTR_CONFIG_2 = {
     'package_upgrade': 'true',
     'disable_root': 0,
-    'packages': [
-            'ethtool'
-    ],
     'ssh_pwauth': 1,
     'chpasswd': {
         'expire': False,
@@ -195,10 +186,6 @@ EXPECTED_VULTR_CONFIG_2 = {
             'root:$6$SxXxTd37HQkwxlOM$/z65E0u9ucrHtQBH9y.chMD2GSbKGFKc/QyYkU9WN/pqQ/lOGZL1YmWqYLSe2W/Ik//k2mJNIzZB5vMCDBlYT1'
         ]
     },
-    'runcmd': [
-        'ethtool -L eth0 combined $(nproc --all)',
-        'ethtool -L eth1 combined $(nproc --all)'
-    ],
     'system_info': {
         'default_user': {
             'name': 'root'
@@ -309,12 +296,10 @@ class TestDataSourceVultr(CiTestCase):
 
 
     # Test the datasource itself
-    @mock.patch('cloudinit.sources.helpers.vultr.process_nics')
     @mock.patch('cloudinit.net.get_interfaces_by_mac')
     @mock.patch('cloudinit.sources.helpers.vultr.is_vultr')
     @mock.patch('cloudinit.sources.helpers.vultr.get_metadata')
-    def test_datasource(self, mock_getmeta, mock_isvultr, mock_netmap, mock_processnics):
-        mock_processnics.return_value = True
+    def test_datasource(self, mock_getmeta, mock_isvultr, mock_netmap):
         mock_getmeta.return_value = {
             "enabled": True,
             "v1": json.loads(VULTR_V1_2),
@@ -354,11 +339,9 @@ class TestDataSourceVultr(CiTestCase):
 
 
     # Test overall config generation
-    @mock.patch('cloudinit.sources.helpers.vultr.process_nics')
     @mock.patch('cloudinit.net.get_interfaces_by_mac')
     @mock.patch('cloudinit.sources.helpers.vultr.get_metadata')
-    def test_get_data_1(self, mock_getmeta, mock_netmap, mock_processnics):
-        mock_processnics.return_value = True
+    def test_get_data_1(self, mock_getmeta, mock_netmap):
         mock_getmeta.return_value = {
             "enabled": True,
             "user-data": "",
@@ -374,11 +357,9 @@ class TestDataSourceVultr(CiTestCase):
 
 
     # Test overall config generation
-    @mock.patch('cloudinit.sources.helpers.vultr.process_nics')
     @mock.patch('cloudinit.net.get_interfaces_by_mac')
     @mock.patch('cloudinit.sources.helpers.vultr.get_metadata')
-    def test_get_data_2(self, mock_getmeta, mock_netmap, mock_processnics):
-        mock_processnics.return_value = True
+    def test_get_data_2(self, mock_getmeta, mock_netmap):
         mock_getmeta.return_value = {
             "enabled": True,
             "user-data": "",
@@ -394,11 +375,9 @@ class TestDataSourceVultr(CiTestCase):
 
 
     # Test network config generation
-    @mock.patch('cloudinit.sources.helpers.vultr.process_nics')
     @mock.patch('cloudinit.net.get_interfaces_by_mac')
     @mock.patch('cloudinit.sources.helpers.vultr.get_metadata')
-    def test_network_config(self, mock_getmeta, mock_netmap, mock_processnics):
-        mock_processnics.return_value = True
+    def test_network_config(self, mock_getmeta, mock_netmap):
         mock_getmeta.return_value = {
             "enabled": True,
             "v1": json.loads(VULTR_V1_1)
@@ -410,11 +389,9 @@ class TestDataSourceVultr(CiTestCase):
 
 
     # Test Private Networking config generation
-    @mock.patch('cloudinit.sources.helpers.vultr.process_nics')
     @mock.patch('cloudinit.net.get_interfaces_by_mac')
     @mock.patch('cloudinit.sources.helpers.vultr.get_metadata')
-    def test_private_network_config(self, mock_getmeta, mock_netmap, mock_processnics):
-        mock_processnics.return_value = True
+    def test_private_network_config(self, mock_getmeta, mock_netmap):
         mock_getmeta.return_value = {
             "enabled": True,
             "v1": json.loads(VULTR_V1_2)
