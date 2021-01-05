@@ -5,6 +5,7 @@
 import json
 import re
 
+from os import path
 import base64
 
 from cloudinit import log as log
@@ -95,6 +96,25 @@ def is_vultr():
         return True
 
     return False
+
+
+# Read cached network config
+def get_cached_network_config():
+    os.makedirs("/etc/vultr/cache/", exist_ok=True)
+    content = ""
+    if path.exists("/etc/vultr/cache/network"):
+        file = open("/etc/vultr/cache/network", "r")
+        content = file.read()
+        file.close()
+    return content
+
+
+# Cached network config
+def cache_network_config(config):
+    os.makedirs("/etc/vultr/cache/", exist_ok=True)
+    file = open("/etc/vultr/cache/network", "w")
+    file.write(json.dumps(config))
+    file.close()
 
 
 # Read Metadata endpoint
