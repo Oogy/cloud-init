@@ -23,6 +23,7 @@ BUILTIN_DS_CONFIG = {
 }
 CONFIG = BUILTIN_DS_CONFIG.copy()
 
+
 class DataSourceVultr(sources.DataSource):
 
     dsname = 'Vultr'
@@ -96,30 +97,14 @@ class DataSourceVultr(sources.DataSource):
     def network_config(self):
         config = vultr.generate_network_config(CONFIG)
         config_raw = json.dumps(config)
-        old_config = vultr.get_cached_network_config()
-
-        if config_raw == old_config:
-            LOGGER.info("Network configuration has not changed, ignoring")
-            LOGGER.info(config_raw)
-            return None
 
         # Dump network config so diagnosing failures is manageable
         LOGGER.info("Generated Network:")
         LOGGER.info(config_raw)
 
-        # Cache the network config so we can check for
-        # changes. Users should be able to change interfaces
-        # without interrupting their connectivity on reboot.
-        vultr.cache_network_config(config)
-
-        # Only toggle interfaces if this is a config change
-        toggle = False
-        if not old_config:
-            toggle = True
-
         return config
 
-   
+
 # Used to match classes to dependencies, Vultr requires basic DHCP networking
 datasources = [
     (DataSourceVultr, (sources.DEP_FILESYSTEM, sources.DEP_NETWORK)),

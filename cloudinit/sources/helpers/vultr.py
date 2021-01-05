@@ -1,18 +1,15 @@
-# Authors: Tyler Weldon <tylerweldon94@gmail.com>, Eric Benner <ebenner@vultr.com>
+# Author: Eric Benner <ebenner@vultr.com>
 #
 # This file is part of cloud-init. See LICENSE file for license information.
 
 import json
 import re
 
-import os
-from os import path
 import base64
 
 from cloudinit import log as log
 from cloudinit import url_helper
 from cloudinit import dmi
-from cloudinit import util
 from cloudinit import net
 
 # Get logger
@@ -100,30 +97,12 @@ def is_vultr():
     return False
 
 
-# Read cached network config
-def get_cached_network_config():
-    os.makedirs("/etc/vultr/cache/", exist_ok=True)
-    content = ""
-    if path.exists("/etc/vultr/cache/network"):
-        file = open("/etc/vultr/cache/network", "r")
-        content = file.read()
-        file.close()
-    return content
-
-
-# Cached network config
-def cache_network_config(config):
-    os.makedirs("/etc/vultr/cache/", exist_ok=True)
-    file = open("/etc/vultr/cache/network", "w")
-    file.write(json.dumps(config))
-    file.close()
-
-
 # Read Metadata endpoint
 def read_metadata(params):
-    response = url_helper.readurl(params['url'], timeout=params['timeout'], retries=params['retries'],
-                                  headers={'Metadata-Token': 'vultr'},
-                                  sec_between=params['wait'])
+    response = url_helper.readurl(
+        params['url'], timeout=params['timeout'], retries=params['retries'],
+        headers={'Metadata-Token': 'vultr'},
+        sec_between=params['wait'])
 
     if not response.ok():
         raise RuntimeError("Failed to connect to %s: Code: %s" %
@@ -184,10 +163,11 @@ def generate_network_config(config):
         ]
     }
 
-    for interface in md['v1']['interfaces']:
+    if len(md['v1']['interfaces']) > 0:
+        interface = md['v1']['interfaces'][0]
         interface_name = get_interface_name(interface['mac'])
         if not interface_name:
-            raise RuntimeError("Interface: %s could not be found on the system" % interface['mac'])
+            raise RuntimeError("Interface: %s not found" % interface['mac'])
 
         netcfg = {
             "name": interface_name,
@@ -199,13 +179,36 @@ def generate_network_config(config):
                     "type": "static",
                     "control": "auto",
                     "address": interface['ipv4']['address'],
-                    "netmask": interface['ipv4']['netmask'],
-                    "gateway": interface['ipv4']['gateway']
+                    "gateway": interface['ipv4']['gateway'],
+                    "netmask": interface['ipv4']['netmask']
                 },
                 {
                     "type": "dhcp6",
                     "control": "auto"
                 },
+            ]
+        }
+
+        network['config'].append(netcfg)
+
+    if len(md['v1']['interfaces']) > 1:
+        interface = md['v1']['interfaces'][1]
+        interface_name = get_interface_name(interface['mac'])
+        if not interface_name:
+            raise RuntimeError("Interface: %s not found" % interface['mac'])
+
+        netcfg = {
+            "name": interface_name,
+            "type": "physical",
+            "mac_address": interface['mac'],
+            "accept-ra": 1,
+            "subnets": [
+                {
+                    "type": "static",
+                    "control": "auto",
+                    "address": interface['ipv4']['address'],
+                    "netmask": interface['ipv4']['netmask']
+                }
             ]
         }
 
@@ -234,8 +237,6 @@ def generate_config(config):
     config_template = {
         "package_upgrade": "true",
         "disable_root": 0,
-        "packages": [
-        ],
         "ssh_pwauth": 1,
         "chpasswd": {
             "expire": False,
@@ -243,7 +244,6 @@ def generate_config(config):
                 "root:" + rootpw
             ]
         },
-        "runcmd": [],
         "system_info": {
             "default_user": {
                 "name": "root"
