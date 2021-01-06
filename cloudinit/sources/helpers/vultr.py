@@ -238,12 +238,6 @@ def generate_config(config):
         "disable_root": 0,
         "ssh_pwauth": 1,
         "runcmd": [],
-        "chpasswd": {
-            "expire": False,
-            "list": [
-                "root:" + rootpw
-            ]
-        },
         "system_info": {
             "default_user": {
                 "name": "root"
@@ -251,6 +245,10 @@ def generate_config(config):
         },
         "network": generate_network_config(config)
     }
+
+    return config_template
+"""
+# removing this for a moment, seems to be interpretting the cloud-init userdata as a startup script
 
     # Set the startup script
     if script != "":
@@ -270,7 +268,7 @@ def generate_config(config):
             "/tmp/startup-vultr.sh &> /var/log/vultr-boot.log",
             "rm -f /tmp/startup-vultr.sh"
         ]
+"""
 
-    return config_template
 
 # vi: ts=4 expandtab
