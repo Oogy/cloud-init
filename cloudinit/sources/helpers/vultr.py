@@ -177,11 +177,8 @@ def generate_network_config(config):
             "accept-ra": 1,
             "subnets": [
                 {
-                    "type": "static",
-                    "control": "auto",
-                    "address": interface['ipv4']['address'],
-                    "gateway": interface['ipv4']['gateway'],
-                    "netmask": interface['ipv4']['netmask']
+                    "type": "dhcp",
+                    "control": "auto"
                 },
                 {
                     "type": "dhcp6",
@@ -202,6 +199,7 @@ def generate_network_config(config):
             "name": interface_name,
             "type": "physical",
             "mac_address": interface['mac'],
+            "mtu": 1450,
             "accept-ra": 1,
             "subnets": [
                 {

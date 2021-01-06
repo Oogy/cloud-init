@@ -166,11 +166,8 @@ EXPECTED_VULTR_CONFIG_1 = {
                 'accept-ra': 1,
                 'subnets': [
                     {
-                        'type': 'static',
+                        'type': 'dhcp',
                         'control': 'auto',
-                        'address': '108.61.89.242',
-                        'gateway': '108.61.89.1',
-                        'netmask': '255.255.255.0'
                     },
                     {'type': 'dhcp6', 'control': 'auto'}
                 ]
@@ -209,11 +206,8 @@ EXPECTED_VULTR_CONFIG_2 = {
                 'accept-ra': 1,
                 'subnets': [
                     {
-                        'type': 'static',
-                        'control': 'auto',
-                        'address': '45.76.7.171',
-                        'gateway': '45.76.6.1',
-                        'netmask': '255.255.254.0'
+                        'type': 'dhcp',
+                        'control': 'auto'
                     },
                     {'type': 'dhcp6', 'control': 'auto'}
                 ]
@@ -222,6 +216,7 @@ EXPECTED_VULTR_CONFIG_2 = {
                 'name': 'eth1',
                 'type': 'physical',
                 'mac_address': '5a:00:03:1b:4e:ca',
+                'mtu': 1450,
                 'accept-ra': 1,
                 'subnets': [
                     {
@@ -250,11 +245,8 @@ EXPECTED_VULTR_NETWORK_1 = {
             'accept-ra': 1,
             'subnets': [
                 {
-                    'type': 'static',
-                    'control': 'auto',
-                    'address': '108.61.89.242',
-                    'gateway': '108.61.89.1',
-                    'netmask': '255.255.255.0'
+                    'type': 'dhcp',
+                    'control': 'auto'
                 },
                 {'type': 'dhcp6', 'control': 'auto'}
             ],
@@ -276,11 +268,8 @@ EXPECTED_VULTR_NETWORK_2 = {
             'accept-ra': 1,
             'subnets': [
                 {
-                    'type': 'static',
-                    'control': 'auto',
-                    'address': '45.76.7.171',
-                    'gateway': '45.76.6.1',
-                    'netmask': '255.255.254.0'
+                    'type': 'dhcp',
+                    'control': 'auto'
                 },
                 {'type': 'dhcp6', 'control': 'auto'}
             ],
@@ -289,6 +278,7 @@ EXPECTED_VULTR_NETWORK_2 = {
             'name': 'eth1',
             'type': 'physical',
             'mac_address': '5a:00:03:1b:4e:ca',
+            'mtu': 1450,
             'accept-ra': 1,
             'subnets': [
                 {
