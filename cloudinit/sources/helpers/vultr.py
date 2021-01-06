@@ -239,6 +239,7 @@ def generate_config(config):
         "package_upgrade": "true",
         "disable_root": 0,
         "ssh_pwauth": 1,
+        "runcmd": [],
         "chpasswd": {
             "expire": False,
             "list": [
